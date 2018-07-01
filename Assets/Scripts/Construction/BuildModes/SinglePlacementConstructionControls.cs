@@ -5,9 +5,9 @@ using UnityEngine;
 
 public class SinglePlacementConstructionControls : PlaceConstructionControls {
 
-    public override UserControlScheme BuildControlScheme(Action<Tile> perform, GameObject previewObj)
+    public override UserControlScheme BuildControlScheme(Action<Tile> perform, Func<Tile, bool> canPerform, GameObject previewObj)
     {
-        UserControlScheme ucs = base.BuildControlScheme(perform, previewObj);
+        UserControlScheme ucs = base.BuildControlScheme(perform, canPerform, previewObj);
 
         ucs.Controls[() =>
         {

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class DragConstructionControls : ConstructionControls {
 
-    public UserControlScheme BuildControlScheme(Action<Tile> perform, GameObject prefabs, TileLayer layer)
+    public UserControlScheme BuildControlScheme(Action<Tile> perform, Func<Tile, bool> canPerform, GameObject prefabs)
     {
 
         Dictionary<Func<bool>, Action> controlScheme = new Dictionary<Func<bool>, Action>();
@@ -65,13 +65,13 @@ public class DragConstructionControls : ConstructionControls {
             foreach (Tile t in tiles)
             {
                 //Add new tiles if they aren't already added
-                if (layer.CanAddTile(t) && uiPool.ContainsKey(t) == false)
+                if (canPerform(t) && uiPool.ContainsKey(t) == false)
                 {
                     //TODO: cleaner parent
                     uiPool[t] = MonoBehaviour.Instantiate(prefabs, new Vector3(t.Position.x, t.Position.y, 0f), Quaternion.identity);
                 }
                 //If the tile is still in the set but now invalid
-                else if (layer.CanAddTile(t) == false && uiPool.ContainsKey(t))
+                else if (canPerform(t) == false && uiPool.ContainsKey(t))
                 {
                     MonoBehaviour.Destroy(uiPool[t]);
                     uiPool.Remove(t);
@@ -99,7 +99,11 @@ public class DragConstructionControls : ConstructionControls {
                 {
                     for (int j = minY; j <= maxY; j++)
                     {
-                        perform(MapManager.Instance.GetTileAt(new Vector2Int(i, j)));
+                        Tile t = MapManager.Instance.GetTileAt(new Vector2Int(i, j));
+                        if (canPerform(t))
+                        {
+                            perform(t);
+                        }
                     }
                 }
             }

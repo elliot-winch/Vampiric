@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -6,37 +7,47 @@ public class ObjectLayer : TileLayer {
 
     Dictionary<Tile, GameObject> objs;
 
-    public ObjectLayer(TileLayerManager.LayerKey layerKey) : base(layerKey)
+    public ObjectLayer(TileLayerManager.LayerKey layerKey, Func<Tile, bool> canPlace) : base(layerKey, canPlace)
     {
         this.objs = new Dictionary<Tile, GameObject>();
     }
 
-    public virtual void AddObject(Tile t, GameObject prefab)
+    public virtual void AddObject(GameObject prefab, Tile sourceTile, List<Tile> includedTiless)
     {
-        GameObject g = MonoBehaviour.Instantiate(prefab, new Vector3(t.Position.x, t.Position.y, 0f), Quaternion.identity);
+        GameObject g = MonoBehaviour.Instantiate(prefab, new Vector3(sourceTile.Position.x, sourceTile.Position.y, 0f), Quaternion.identity);
 
         g.transform.parent = TileLayerManager.Instance.GetLayerParent(base.layerKey);
 
-        objs[t] = g;
+        foreach(Tile t in includedTiless)
+        {
+            objs[t] = g;
+        }
 
         if (prefab.GetComponent<IConstructable>() != null)
         {
-
-            prefab.GetComponent<IConstructable>().OnConstructed(t);
+            prefab.GetComponent<IConstructable>().OnConstructed(sourceTile);
         }
     }
 
 
     public override void RemoveTile(Tile t)
     {
-        base.RemoveTile(t);
-
         if (objs.ContainsKey(t))
         {
             GameObject g = objs[t];
 
-            objs.Remove(t);
+            Tile[] objKeys = new Tile[objs.Count];
+            objs.Keys.CopyTo(objKeys, 0);
 
+            foreach(Tile r in objKeys)
+            {
+                if(objs[r] == g)
+                {
+                    layer.Remove(r);
+                    objs.Remove(r);
+                }
+            }
+            
             MonoBehaviour.Destroy(g);
         }
     }

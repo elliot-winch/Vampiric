@@ -6,7 +6,7 @@ public class PlaceConstructionControls : ConstructionControls {
 
     protected string name;
 
-    public virtual UserControlScheme BuildControlScheme(Action<Tile> perform, GameObject previewObj)
+    public virtual UserControlScheme BuildControlScheme(Action<Tile> perform, Func<Tile, bool> canPerform, GameObject previewObj)
     {
 
         Dictionary<Func<bool>, Action> controlScheme = new Dictionary<Func<bool>, Action>();
@@ -18,7 +18,10 @@ public class PlaceConstructionControls : ConstructionControls {
         }
         ] = () =>
         {
-            perform(MouseLocation.TileThisFrame);
+            if (canPerform(MouseLocation.TileThisFrame))
+            {
+                perform(MouseLocation.TileThisFrame);
+            }
         };
 
         //Mouse follow
@@ -45,6 +48,8 @@ public class PlaceConstructionControls : ConstructionControls {
                 mouseFollowObj = new GameObject();
 
                 mouseFollowObj.AddComponent<SpriteRenderer>().sprite = previewObj.GetComponent<SpriteRenderer>().sprite;
+
+                mouseFollowObj.transform.localScale = previewObj.transform.localScale;
             }
         };
 

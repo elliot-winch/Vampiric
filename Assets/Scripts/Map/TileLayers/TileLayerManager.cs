@@ -10,11 +10,25 @@ public class TileLayerManager : MonoBehaviour
     public enum LayerKey
     { 
         Floor,
-        Placeable
+        Furniture,
+        Wall
     }
 
     private Dictionary<LayerKey, TileLayer> layers;
 
+    //Foreach value in your list, the tile you are trying to place on must not belong to this layer
+    private Dictionary<LayerKey, LayerKey[]> mutExLayers = new Dictionary<LayerKey, LayerKey[]>()
+    {
+        { LayerKey.Wall, new LayerKey[] { LayerKey.Furniture } },
+        { LayerKey.Furniture, new LayerKey[] { LayerKey.Wall } },
+        { LayerKey.Floor, new LayerKey[] { LayerKey.Wall } },
+    };
+
+    //Foreach value in your list, the tile you are trying to place on must belong to this layer
+    private Dictionary<LayerKey, LayerKey[]> prerequisteLayers = new Dictionary<LayerKey, LayerKey[]>()
+    {
+        { LayerKey.Furniture, new LayerKey[] { LayerKey.Floor } },
+    };
 
     private void Start()
     {
@@ -22,13 +36,37 @@ public class TileLayerManager : MonoBehaviour
 
         layers = new Dictionary<LayerKey, TileLayer>();
 
-        ObjectLayer placeablesLayer = new ObjectLayer(LayerKey.Placeable);
-
-        layers[LayerKey.Placeable] = placeablesLayer;
-        layers[LayerKey.Floor] = new FloorLayer(LayerKey.Floor, placeablesLayer);
-
-        foreach(LayerKey k in layers.Keys)
+        foreach(LayerKey k in Enum.GetValues(typeof(LayerKey)))
         {
+            //Create canPlace using mutEx and pre-req layers
+            Func<Tile, bool> canPlace = (t) => { return true; };
+
+            if (mutExLayers.ContainsKey(k))
+            {
+                foreach (LayerKey mutEx in mutExLayers[k])
+                {
+                    canPlace += (t) =>
+                    {
+                        return this.layers[mutEx].ContainsTile(t) == false;
+                    };
+                }
+            }
+
+
+            if (prerequisteLayers.ContainsKey(k))
+            {
+                foreach (LayerKey prereq in prerequisteLayers[k])
+                {
+                    canPlace += (t) =>
+                    {
+                        return this.layers[prereq].ContainsTile(t);
+                    };
+                }
+            }
+
+            this.layers[k] = new ObjectLayer(k, canPlace);
+
+            //Hierarchy management
             GameObject parent = new GameObject();
 
             parent.name = k.ToString();
@@ -59,10 +97,13 @@ public class TileLayer
     protected List<Tile> layer;
     protected TileLayerManager.LayerKey layerKey;
 
-    public TileLayer(TileLayerManager.LayerKey layerKey)
+    private Func<Tile, bool> canPlace;
+
+    public TileLayer(TileLayerManager.LayerKey layerKey, Func<Tile, bool> canPlace)
     {
         this.layerKey = layerKey;
         this.layer = new List<Tile>();
+        this.canPlace = canPlace;
     }
 
     public void AddTile(Tile t)
@@ -78,7 +119,7 @@ public class TileLayer
     public virtual bool CanAddTile(Tile t)
     {
         //Canot add a tile which is already in the layer
-        return ContainsTile(t) == false;
+        return ContainsTile(t) == false && canPlace(t);
     }
 
     public virtual void RemoveTile(Tile t)
