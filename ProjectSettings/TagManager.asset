@@ -47,6 +47,9 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Item
+    uniqueID: 1516666953
+    locked: 0
   - name: NPC
     uniqueID: 1570392017
     locked: 0
